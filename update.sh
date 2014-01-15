@@ -3,6 +3,12 @@
 LEADERBOARD=$HOME/leaderboard
 DATAROOT=$HOME/leaderboard/data
 
+[[ -d "$DATAROOT" ]] || mkdir -p "$DATAROOT"
+if [[ ! -d "$DATAROOT" ]]; then
+	echo "Could not create data directory $DATAROOT." >&2
+	exit 1
+fi
+
 "$LEADERBOARD"/scripts/download-all.pl
 "$LEADERBOARD"/scripts/build-table.pl > "$LEADERBOARD"/leaderboard.js
 
