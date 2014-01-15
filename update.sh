@@ -13,6 +13,7 @@ then
 fi
 
 stamp=$(date +"%F-%H-%M")
-cat "$DATAROOT"/leaderboard.js | perl -pe 's/var data/var olddata/' > "$DATAROOT"/leaderboard.js.$stamp
+sed 's/var data/var olddata/' <"$DATAROOT"/leaderboard.js \
+	>"$DATAROOT"/leaderboard.js.$stamp
 ln -sf "$DATAROOT"/leaderboard.js.$stamp "$DATAROOT"/leaderboard-old.js
 mv "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js
