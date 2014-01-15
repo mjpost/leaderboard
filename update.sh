@@ -1,16 +1,18 @@
 #!/bin/bash
 
-cd $HOME/code/mt-class
-./scripts/download-all.pl
-./scripts/build-table.pl > leaderboard.js
+LEADERBOARD=$HOME/leaderboard
+DATAROOT=$HOME/leaderboard/data
 
-if diff leaderboard.js $HOME/public_html/mt-class/leaderboard.js > /dev/null
+"$LEADERBOARD"/scripts/download-all.pl
+"$LEADERBOARD"/scripts/build-table.pl > "$LEADERBOARD"/leaderboard.js
+
+if diff "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js > /dev/null
 then
 	# leaderboard.js hasn't changed.
 	exit 0
 fi
 
 stamp=$(date +"%F-%H-%M")
-cat $HOME/public_html/mt-class/leaderboard.js | perl -pe 's/var data/var olddata/' > $HOME/public_html/mt-class/leaderboard.js.$stamp
-ln -sf leaderboard.js.$stamp $HOME/public_html/mt-class/leaderboard-old.js
-mv leaderboard.js $HOME/public_html/mt-class/leaderboard.js
+cat "$DATAROOT"/leaderboard.js | perl -pe 's/var data/var olddata/' > "$DATAROOT"/leaderboard.js.$stamp
+ln -sf "$DATAROOT"/leaderboard.js.$stamp "$DATAROOT"/leaderboard-old.js
+mv "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js
