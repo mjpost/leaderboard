@@ -12,7 +12,10 @@ fi
 "$LEADERBOARD"/scripts/download-all.pl
 "$LEADERBOARD"/scripts/build-table.pl > "$LEADERBOARD"/leaderboard.js
 
-if diff "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js > /dev/null
+if [[ ! -e "$DATAROOT"/leaderboard.js ]]; then
+	mv "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js
+	exit 0
+elif diff "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js > /dev/null
 then
 	# leaderboard.js hasn't changed.
 	exit 0
