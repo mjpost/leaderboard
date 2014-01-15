@@ -1,22 +1,28 @@
 #!/bin/bash
 
-# cd $HOME/code/mt-class.github.com
-# git pull | grep -v "Already up-to-date"
+LEADERBOARD=$HOME/leaderboard
+DATAROOT=$HOME/leaderboard/data
 
-cd $HOME/code/mt-class
-./scripts/download-all.pl
-./scripts/build-table.pl > leaderboard.js
-
-diff leaderboard.js $HOME/public_html/mt-class/leaderboard.js > /dev/null
-if [[ $? -eq 1 ]]; then
-#    echo "Updating leaderboard (http://mt-class.org/leaderboard.html)"
-    stamp=$(date +"%F-%H-%M")
-    cat $HOME/public_html/mt-class/leaderboard.js | perl -pe 's/var data/var olddata/' > $HOME/public_html/mt-class/leaderboard.js.$stamp
-    ln -sf leaderboard.js.$stamp $HOME/public_html/mt-class/leaderboard-old.js
-    mv leaderboard.js $HOME/public_html/mt-class/leaderboard.js
-    # cd $HOME/code/mt-class.github.com
-    # git add leaderboard.html
-    # stamp=$(date +"%F-%H-%M")
-    # git commit -m "automatic update ($stamp)"
-    # git push
+[[ -d "$DATAROOT" ]] || mkdir -p "$DATAROOT"
+if [[ ! -d "$DATAROOT" ]]; then
+	echo "Could not create data directory $DATAROOT." >&2
+	exit 1
 fi
+
+"$LEADERBOARD"/scripts/download-all.pl
+"$LEADERBOARD"/scripts/build-table.pl > "$LEADERBOARD"/leaderboard.js
+
+if [[ ! -e "$DATAROOT"/leaderboard.js ]]; then
+	mv "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js
+	exit 0
+elif diff "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js > /dev/null
+then
+	# leaderboard.js hasn't changed.
+	exit 0
+fi
+
+stamp=$(date +"%F-%H-%M")
+sed 's/var data/var olddata/' <"$DATAROOT"/leaderboard.js \
+	>"$DATAROOT"/leaderboard.js.$stamp
+ln -sf "$DATAROOT"/leaderboard.js.$stamp "$DATAROOT"/leaderboard-old.js
+mv "$LEADERBOARD"/leaderboard.js "$DATAROOT"/leaderboard.js
