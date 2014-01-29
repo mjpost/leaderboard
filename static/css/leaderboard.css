@@ -1,0 +1,30 @@
+.word {
+  cursor:pointer;
+}
+.word-aligned {
+  color:Gray;
+}
+.word-highlighted {
+  color:#428bca
+}
+.word-working {
+  color:White;
+  background-color:DimGray;
+  padding:2px;
+  border-radius:5px;
+}
+.word-working.word-highlighted {
+  color:White;
+  background-color:#428bca;
+}
+.jumbotron {
+  white-space:nowrap;
+  overflow-x:scroll;
+}
+.panel {
+  white-space:nowrap;
+}
+.submitted {
+    font-style: italic;
+    font-size: 10pt;
+}

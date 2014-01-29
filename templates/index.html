@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="static/css/jasny-bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="static/css/leaderboard.css" rel="stylesheet" media="screen">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse" role="navigation">
+      <ul class="nav navbar-nav">
+        <li><a href="#">JHU MT class assignment submissions</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="{{ logout }}">Logout {{ user }}</a></li>
+      </ul>
+    </nav>
+
+    <div class="jumbotron">
+      <div class="panel panel-default">
+        <div class="panel-heading">Leaderboard</div>
+        <div class="panel-body">
+          <form class="form-inline" role="form" action="/handle?" method="post">
+            <div class="checkbox">
+                <input type="checkbox" id="leaderboard" name="leaderboard" {{ checked }} value="True" />
+                Show me on the leaderboard
+            </div>
+            <div id="handlediv" class="form-group">
+              <div class="checkbox">
+                with handle
+              </div>
+              <div class="form-group">
+                <input type="text" 
+                       class="form-control" 
+                       id="handle" 
+                       name="handle" 
+                       placeholder="{{ handle }}" 
+                       value="{{ handle }}" />
+              </div>
+            </div>
+            <div class="form-group">
+              <button class="btn btn-primary" type="submit">Update</button><br/>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">Assignments</div>
+        <div class="panel-body">
+          <table class="table table-striped">
+            <thead>
+              <th>No.</th>
+              <th>File</th>
+              <th>Upload</th>
+              <th>Score</th>
+            </thead>
+            <tbody>
+              {% for a in assignments %}
+              <tr>
+                <td><a href="http://mt-class.org/jhu/hw{{a.number}}.html">{{ a.number }}</a></td>
+                <td>
+                  {% if a.filename %}
+                  <span>{{ a.filename }}<span><br />
+                  <span class="submitted">Submitted {{ a.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form action="/upload?" method="post" enctype="multipart/form-data">
+                    <div class="fileinput fileinput-new" data-provides="fileinput">
+                      <span class="btn btn-default btn-file">
+                        <span class="fileinput-new">Select file</span>
+                        <span class="fileinput-exists">Change file</span>
+                        <input type="file" id="file" name="file"/>
+                        <input type="hidden" id="number" name="number" value="{{ a.number }}"/>
+                      </span>
+                      <span class="fileinput-filename"></span>
+                      <a href="#" class="close fileinput-exists" data-dismiss="fileinput" style="float: none">&times;</a>
+                    </div>
+                    <button class="btn btn-primary" type="submit" disabled="disabled" id="upload">Upload</button>
+                  </form>
+                </td>
+                <td>
+                {% if a.filename %}
+                  {% if a.score == 0 %}
+                    [Error]
+                  {% else %}
+                    {{ a.score }}
+                  {% endif %}
+                {% endif %}
+                </td>
+              </tr>
+          {% endfor %}
+        </div>
+      </div><!-- panel -->
+    </div>
+    <div id="debug_area"></div>
+    <div id="model_area"></div>
+
+    <!-- JavaScript -->
+    <script src="static/js/jquery-1.10.2.min.js"></script>
+    <script src="static/js/jquery.jsPlumb-1.4.1-all-min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    <script src="static/js/jasny-bootstrap.min.js"></script>
+    <script type="text/javascript">
+      $(".fileinput").bind("change.bs.fileinput", function(){
+        $("#upload").removeAttr("disabled");
+      })
+      $(".fileinput").bind("clear.bs.fileinput", function(){
+        $("#upload").attr("disabled", "disabled");
+      })
+      $(".jumbotron").on( "scroll", function(){
+        jsPlumb.repaintEverything();       
+      });
+      $(document).ready(function() {
+//        var checked = $('#handlediv').val($('#leaderboard').is(':checked'));
+        var checked = $('#leaderboard').is(':checked');
+        if (checked)
+          $('#handlediv').show();
+        else
+          $('#handlediv').hide();
+
+        $('#leaderboard').change(function() {
+          $('#handlediv').toggle();
+        });
+      });
+    </script>
+  </body>
+</html>
