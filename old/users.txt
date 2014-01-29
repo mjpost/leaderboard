@@ -1,3 +1,0 @@
-| Name               | email                      | handle      | base_url                        |
-|--------------------+----------------------------+-------------+---------------------------------|
-| First Last         | foo@bar.com                | zerocool    | http://path/to/upload/directory |
