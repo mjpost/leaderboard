@@ -11,7 +11,8 @@ from google.appengine.ext import ndb
 import jinja2
 import webapp2
 
-NUM_ASSIGNMENTS = 2
+# The index of the current assignment (0-indexed)
+CURRENT_ASSIGNMENT = 1
 
 JINJA_ENVIRONMENT = jinja2.Environment(
   loader=jinja2.FileSystemLoader(
@@ -47,7 +48,7 @@ class MainPage(webapp2.RequestHandler):
                            handle = user.nickname())
       user_handle.put()
       
-    assignments = [None for x in range(NUM_ASSIGNMENTS)]
+    assignments = [None for x in range(CURRENT_ASSIGNMENT+1)]
     for ass in Assignment.query(Assignment.user == user).fetch():
       if ass.number < len(assignments):
         assignments[ass.number] = ass
@@ -130,14 +131,17 @@ class LeaderBoard(webapp2.RequestHandler):
       if handles.has_key(a.user):
         user_handle = handles[a.user]
         if not scores.has_key(user_handle):
-          scores[user_handle] = [None for x in range(NUM_ASSIGNMENTS)]
+          scores[user_handle] = [None for x in range(CURRENT_ASSIGNMENT+1)]
 
-        if a.number < NUM_ASSIGNMENTS:
+        if a.number <= CURRENT_ASSIGNMENT:
           scores[user_handle][a.number] = a.score
+
+    sorted_handles = sorted(scores.keys(), cmp=lambda x,y: cmp(scores[x][CURRENT_ASSIGNMENT], scores[y][CURRENT_ASSIGNMENT]), reverse=True)
 
     template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
     template_values = {
-      'scores': scores
+      'handles': sorted_handles,
+      'scores': scores,
     }
 
     self.response.write(template.render(template_values))
