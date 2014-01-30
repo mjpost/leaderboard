@@ -9,7 +9,7 @@ To use it:
 
 1. Clone it:
 
-      git clone git@github.com:mjpost/leaderboard
+       git clone git@github.com:mjpost/leaderboard
 
 1. Check out [the developer documentation](https://developers.google.com/appengine/) and in
 particular
@@ -18,14 +18,14 @@ for instructions on how to download the test environment
 
 1. Test it, make changes, etc:
 
-      dev_appserver.py leaderboard/
+       dev_appserver.py leaderboard/
 
 1. Copy `app.yaml.template' to `app.yaml`. Change the application ID line in there to match
 the app ID you created at [appspot.com](appspot.com).
 
 1. Upload it with
 
-      appcfg.py --oauth2 update leaderboard/
+       appcfg.py --oauth2 update leaderboard/
     
    The first time you do this, a browser window will open for you to authenticate.
     
