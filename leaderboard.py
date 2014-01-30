@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import math
 import urllib
 
 from collections import defaultdict
@@ -134,7 +135,7 @@ class LeaderBoard(webapp2.RequestHandler):
           scores[user_handle] = [None for x in range(CURRENT_ASSIGNMENT+1)]
 
         if a.number <= CURRENT_ASSIGNMENT:
-          if a.score == float('nan'):
+          if math.isnan(a.score):
             scores[user_handle][a.number] = float('-inf')
           else:
             scores[user_handle][a.number] = a.score
