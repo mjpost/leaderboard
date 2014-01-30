@@ -136,7 +136,16 @@ class LeaderBoard(webapp2.RequestHandler):
         if a.number <= CURRENT_ASSIGNMENT:
           scores[user_handle][a.number] = a.score
 
-    sorted_handles = sorted(scores.keys(), cmp=lambda x,y: cmp(scores[x][CURRENT_ASSIGNMENT], scores[y][CURRENT_ASSIGNMENT]), reverse=True)
+    def score_sort(x, y):
+      index = CURRENT_ASSIGNMENT
+      while index >= 0:
+        which = cmp(scores[x][index], scores[y][index])
+        if which != 0:
+          return which
+        index -= 1
+      return 0
+
+    sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=True)
 
     template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
     template_values = {
