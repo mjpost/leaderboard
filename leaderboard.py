@@ -134,7 +134,10 @@ class LeaderBoard(webapp2.RequestHandler):
           scores[user_handle] = [None for x in range(CURRENT_ASSIGNMENT+1)]
 
         if a.number <= CURRENT_ASSIGNMENT:
-          scores[user_handle][a.number] = a.score
+          if a.score == float('nan'):
+            scores[user_handle][a.number] = float('-inf')
+          else:
+            scores[user_handle][a.number] = a.score
 
     def score_sort(x, y):
       index = CURRENT_ASSIGNMENT
