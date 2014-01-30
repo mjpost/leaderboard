@@ -20,12 +20,14 @@ for instructions on how to download the test environment
 
     dev_appserver.py leaderboard/
 
-1. Change the application ID in `app.yaml` to point to the app you created at
-[appspot.com](appspot.com). 
+1. Copy `app.yaml.template' to `app.yaml`. Change the application ID line in there to match
+the app ID you created at [appspot.com](appspot.com).
 
 1. Upload it with
 
     appcfg.py --oauth2 update leaderboard/
+    
+   The first time you do this, a browser window will open for you to authenticate.
     
 1. You can then access it at APP_ID.appspot.com
 
