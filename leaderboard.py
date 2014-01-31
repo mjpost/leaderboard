@@ -22,25 +22,34 @@ JINJA_ENVIRONMENT = jinja2.Environment(
   autoescape=True)
 
 def key(user, id):
+  """Creates the key used to store assignments. Each key is a concatenation of the userid and the
+assignment number."""
+
   return '%s / %s' % (user.user_id(), id)
 
 class Assignment(ndb.Model):
+  """A database entry corresponding to an assignment."""
+
   user = ndb.UserProperty()
   number = ndb.IntegerProperty()
   filename = ndb.StringProperty()
-  filedata = ndb.TextProperty()
+  filedata = ndb.BlobProperty()
   score = ndb.FloatProperty()
   timestamp = ndb.DateTimeProperty(auto_now=True)
 
 class Handle(ndb.Model):
+  """A database entry recording a user's anonymizing handle."""
   user = ndb.UserProperty()
   leaderboard = ndb.BooleanProperty()
   handle = ndb.TextProperty()
 
 class MainPage(webapp2.RequestHandler):
+  """Displays the main page."""
+
   def get(self):
     user = users.get_current_user()
 
+    # Create the user's handle in the database if it does not exist
     user_handle = Handle.get_by_id(user.user_id())
     if user_handle is None:
       user_handle = Handle(id = user.user_id(), 
@@ -48,7 +57,9 @@ class MainPage(webapp2.RequestHandler):
                            leaderboard = True, 
                            handle = user.nickname())
       user_handle.put()
-      
+
+    # Retrieve all the user's assignments, up to and including the current one. Entries that don't
+    # exist are created.
     assignments = [None for x in range(CURRENT_ASSIGNMENT+1)]
     for ass in Assignment.query(Assignment.user == user).fetch():
       if ass.number < len(assignments):
@@ -75,7 +86,11 @@ class MainPage(webapp2.RequestHandler):
     template = JINJA_ENVIRONMENT.get_template('index.html')   
     self.response.write(template.render(template_values))
 
+# Scoring functions.
+# These functions must be implemented to score each assignment.
+
 def score_sanity_check(filedata):
+  """Homework 0 (setup)."""
   value = filedata.split('\n')[0]
   try:
     return ((float(value)-1.0) % 100) + 1

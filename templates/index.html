@@ -67,7 +67,7 @@
                 </td>
                 <td>
                   <form action="/upload?" method="post" enctype="multipart/form-data">
-                    <div class="fileinput fileinput-new" data-provides="fileinput">
+                    <div class="fileinput fileinput-new uploadinput-{{ a.number }}" data-provides="fileinput">
                       <span class="btn btn-default btn-file">
                         <span class="fileinput-new">Select file</span>
                         <span class="fileinput-exists">Change file</span>
@@ -77,7 +77,7 @@
                       <span class="fileinput-filename"></span>
                       <a href="#" class="close fileinput-exists" data-dismiss="fileinput" style="float: none">&times;</a>
                     </div>
-                    <button class="btn btn-primary" type="submit" disabled="disabled" id="upload">Upload</button>
+                    <button class="btn btn-primary" type="submit" disabled="disabled" id="upload-{{ a.number }}">Upload</button>
                   </form>
                 </td>
                 <td>
@@ -103,12 +103,14 @@
     <script src="static/js/bootstrap.min.js"></script>
     <script src="static/js/jasny-bootstrap.min.js"></script>
     <script type="text/javascript">
-      $(".fileinput").bind("change.bs.fileinput", function(){
-        $("#upload").removeAttr("disabled");
+      {% for a in assignments %}
+      $(".uploadinput-{{ a.number }}").bind("change.bs.fileinput", function(){
+        $("#upload-{{ a.number }}").removeAttr("disabled");
       })
-      $(".fileinput").bind("clear.bs.fileinput", function(){
-        $("#upload").attr("disabled", "disabled");
+      $(".uploadinput-{{ a.number }}").bind("clear.bs.fileinput", function(){
+        $("#upload-{{a.number }}").attr("disabled", "disabled");
       })
+      {% endfor %}
       $(".jumbotron").on( "scroll", function(){
         jsPlumb.repaintEverything();       
       });
