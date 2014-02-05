@@ -12,6 +12,8 @@ from google.appengine.ext import ndb
 import jinja2
 import webapp2
 
+import scoring.alignment
+
 # The index of the current assignment (0-indexed)
 CURRENT_ASSIGNMENT = 1
 
@@ -102,7 +104,7 @@ def score_dummy(filename):
 
 scorers = {
   '0': score_sanity_check,
-  '1': score_dummy,
+  '1': scoring.alignment.score,
   '2': score_dummy,
   '3': score_dummy,
   '4': score_dummy,
