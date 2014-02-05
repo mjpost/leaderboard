@@ -18,12 +18,6 @@ def score(a_input, test = False):
             elif i >= 484:
                 break
 
-        print >> sys.stderr, '****', i
-        print >> sys.stderr, f
-        print >> sys.stderr, e
-        print >> sys.stderr, g
-        print >> sys.stderr, a
-
         fwords = f.strip().split()
         ewords = e.strip().split()
         sure = set([tuple(map(int, x.split("-"))) for x in filter(lambda x: x.find("-") > -1, g.strip().split())])
