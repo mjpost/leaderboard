@@ -51,6 +51,9 @@ class MainPage(webapp2.RequestHandler):
   def get(self):
     user = users.get_current_user()
 
+    if user is None:
+      return self.redirect(users.create_login_url(self.request.uri))
+
     # Create the user's handle in the database if it does not exist
     user_handle = Handle.get_by_id(user.user_id())
     if user_handle is None:
@@ -114,6 +117,9 @@ scorers = {
 class Upload(webapp2.RequestHandler):
   def post(self):
     user = users.get_current_user()
+    if user is None:
+      return self.redirect(users.create_login_url(self.request.uri))
+
     number = self.request.get('number')
     assignment = Assignment.get_by_id(key(user, number))
 
@@ -130,6 +136,9 @@ class Upload(webapp2.RequestHandler):
 class ChangeHandle(webapp2.RequestHandler):
   def post(self):
     user = users.get_current_user()
+    if user is None:
+      return self.redirect(users.create_login_url(self.request.uri))
+
     user_handle = Handle.get_by_id(user.user_id())
     user_handle.handle = self.request.get('handle')
     user_handle.leaderboard = (self.request.get('leaderboard') == 'True')
