@@ -79,7 +79,7 @@ class MainPage(webapp2.RequestHandler):
         assignments[i].user = user
         assignments[i].number = i
         assignments[i].datafile = None
-        assignments[i].score = float("-inf")
+        assignments[i].score = float("-inf") if reverse_order[i] else float("inf")
         assignments[i].put()
 
     template_values = {
@@ -156,16 +156,19 @@ class LeaderBoard(webapp2.RequestHandler):
       if handle.leaderboard:
         handles[handle.user] = handle.handle
 
+    def default_score(x):
+      return float('-inf') if reverse_order[x] else float('inf')
+
     scores = defaultdict(list)
     for a in Assignment.query().fetch():
       if handles.has_key(a.user):
         user_handle = handles[a.user]
         if not scores.has_key(user_handle):
-          scores[user_handle] = [None for x in range(CURRENT_ASSIGNMENT+1)]
+          scores[user_handle] = [default_score(x) for x in range(CURRENT_ASSIGNMENT+1)]
 
         if a.number <= CURRENT_ASSIGNMENT:
           if math.isnan(a.score):
-            scores[user_handle][a.number] = float('-inf')
+            scores[user_handle][a.number] = float('-inf') if reverse_order[CURRENT_ASSIGNMENT] else float('inf')
           else:
             scores[user_handle][a.number] = a.score
 
@@ -178,7 +181,7 @@ class LeaderBoard(webapp2.RequestHandler):
         index -= 1
       return 0
 
-    sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=sort_order[CURRENT_ASSIGNMENT])
+    sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=reverse_order[CURRENT_ASSIGNMENT])
 
     template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
     template_values = {

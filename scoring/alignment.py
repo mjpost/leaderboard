@@ -32,7 +32,7 @@ def score(a_input, test = False):
     recall = size_a_and_s / size_s
     aer = 1 - ((size_a_and_s + size_a_and_p) / (size_a + size_s))
 
-    return 1.0-aer
+    return aer
 
 if __name__ == '__main__':
     optparser = optparse.OptionParser()
