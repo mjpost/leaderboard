@@ -14,6 +14,9 @@ import webapp2
 
 import scoring.alignment
 
+# The sort order for all assignments (True = highest first, False = highest first)
+reverse_order = [True, False, True, True, True]
+
 # The index of the current assignment (0-indexed)
 CURRENT_ASSIGNMENT = 1
 
@@ -175,7 +178,7 @@ class LeaderBoard(webapp2.RequestHandler):
         index -= 1
       return 0
 
-    sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=True)
+    sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=sort_order[CURRENT_ASSIGNMENT])
 
     template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
     template_values = {
