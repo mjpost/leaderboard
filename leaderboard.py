@@ -159,7 +159,7 @@ class LeaderBoard(webapp2.RequestHandler):
     handles = {}
     for handle in Handle.query().fetch():
       # Ignore leaderboard prefs for self and for admins
-      if handle.leaderboard or handle.user.email() == user.email() or user.email() in admin_emails:
+      if handle.leaderboard or (user is not None and (handle.user.email() == user.email() or user.email() in admin_emails)):
         handles[handle.user] = handle.handle
 
     def default_score(x):
