@@ -14,6 +14,9 @@ import webapp2
 
 import scoring.alignment
 
+# Admins
+admin_emails = ['mjpost@gmail.com', 'adam.d.lopez@gmail.com']
+
 # The sort order for all assignments (True = highest first, False = highest first)
 reverse_order = [True, False, True, True, True]
 
@@ -151,9 +154,12 @@ class ChangeHandle(webapp2.RequestHandler):
 
 class LeaderBoard(webapp2.RequestHandler):
   def get(self):
+    user = users.get_current_user()
+
     handles = {}
     for handle in Handle.query().fetch():
-      if handle.leaderboard:
+      # Ignore leaderboard prefs for self and for admins
+      if handle.leaderboard or handle.user.email() == user.email() or user.email() in admin_emails:
         handles[handle.user] = handle.handle
 
     def default_score(x):
