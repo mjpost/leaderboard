@@ -157,10 +157,14 @@ class LeaderBoard(webapp2.RequestHandler):
     user = users.get_current_user()
 
     handles = {}
+    hidden_users = []
     for handle in Handle.query().fetch():
       # Ignore leaderboard prefs for self and for admins
-      if handle.leaderboard or (user is not None and (handle.user.email() == user.email() or user.email() in admin_emails)):
+      if handle.leaderboard:
         handles[handle.user] = handle.handle
+      elif user is not None and (handle.user.email() == user.email() or user.email() in admin_emails):
+        handles[handle.user] = handle.handle
+        hidden_users.append(handle.handle)
 
     def default_score(x):
       return float('-inf') if reverse_order[x] else float('inf')
@@ -192,6 +196,7 @@ class LeaderBoard(webapp2.RequestHandler):
     template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
     template_values = {
       'handles': sorted_handles,
+      'hidden_users': hidden_users,
       'scores': scores,
     }
 

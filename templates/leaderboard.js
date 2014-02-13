@@ -3,3 +3,9 @@ var data = [
   ["{{user}}" {% for score in scores[user] %} , "{{ '%0.2f' % (score)}}" {% endfor %} ],
 {% endfor %}
 ];
+
+var hidden_users = {
+{% for user in hidden_users %}
+  "{{ user }}": 1,
+{% endfor %}
+};
