@@ -14,9 +14,6 @@ import webapp2
 
 import scoring.alignment
 
-# Admins
-admin_emails = ['mjpost@gmail.com', 'adam.d.lopez@gmail.com']
-
 # The sort order for all assignments (True = highest first, False = highest first)
 reverse_order = [True, False, True, True, True]
 
@@ -162,7 +159,7 @@ class LeaderBoard(webapp2.RequestHandler):
       # Ignore leaderboard prefs for self and for admins
       if handle.leaderboard:
         handles[handle.user] = handle.handle
-      elif user is not None and (handle.user.email() == user.email() or user.email() in admin_emails):
+      elif user is not None and (handle.user.email() == user.email() or users.is_current_user_admin():
         handles[handle.user] = handle.handle
         hidden_users.append(handle.handle)
 
