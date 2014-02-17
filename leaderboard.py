@@ -155,13 +155,17 @@ class LeaderBoard(webapp2.RequestHandler):
 
     handles = {}
     hidden_users = []
+    names = {}
     for handle in Handle.query().fetch():
       # Ignore leaderboard prefs for self and for admins
       if handle.leaderboard:
         handles[handle.user] = handle.handle
-      elif user is not None and (handle.user.email() == user.email() or users.is_current_user_admin():
+      elif user is not None and (handle.user.email() == user.email() or users.is_current_user_admin()):
         handles[handle.user] = handle.handle
         hidden_users.append(handle.handle)
+
+      if users.is_current_user_admin():
+        names[handle.handle] = handle.user.nickname()
 
     def default_score(x):
       return float('-inf') if reverse_order[x] else float('inf')
@@ -195,6 +199,7 @@ class LeaderBoard(webapp2.RequestHandler):
       'handles': sorted_handles,
       'hidden_users': hidden_users,
       'scores': scores,
+      'names': names,
     }
 
     self.response.write(template.render(template_values))
