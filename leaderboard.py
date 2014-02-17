@@ -5,6 +5,7 @@ import math
 import urllib
 
 from collections import defaultdict
+import datetime
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -14,11 +15,26 @@ import webapp2
 
 import scoring.alignment
 
+#################################################################
+# Assignment-related variables
+#################################################################
+
 # The sort order for all assignments (True = highest first, False = highest first)
 reverse_order = [True, False, True, True, True]
 
 # The index of the current assignment (0-indexed)
 CURRENT_ASSIGNMENT = 1
+
+# Assignment deadlines in UTC
+DEADLINES = [
+  datetime.datetime(2014, 02, 10, 23, 00),
+  datetime.datetime(2014, 02, 17, 23, 00),
+]
+
+
+#################################################################
+# End 
+#################################################################
 
 JINJA_ENVIRONMENT = jinja2.Environment(
   loader=jinja2.FileSystemLoader(
@@ -69,6 +85,7 @@ class MainPage(webapp2.RequestHandler):
     # Retrieve all the user's assignments, up to and including the current one. Entries that don't
     # exist are created.
     assignments = [None for x in range(CURRENT_ASSIGNMENT+1)]
+    expired = [False for x in range(CURRENT_ASSIGNMENT+1)]
     for ass in Assignment.query(Assignment.user == user).fetch():
       if ass.number < len(assignments):
         assignments[ass.number] = ass
@@ -82,6 +99,10 @@ class MainPage(webapp2.RequestHandler):
         assignments[i].score = float("-inf") if reverse_order[i] else float("inf")
         assignments[i].put()
 
+      if i < len(DEADLINES):
+        expired[i] = datetime.datetime.now() >= DEADLINES[i]
+        print >> sys.stderr, datetime.datetime.now(), DEADLINES[i], expired[i]
+
     template_values = {
       'user': user.email(),
       'handle': user_handle.handle,
@@ -89,6 +110,7 @@ class MainPage(webapp2.RequestHandler):
       'checked': 'checked' if user_handle.leaderboard else '',
       'logout': users.create_logout_url('/'),
       'assignments': assignments,
+      'expired': expired,
     }
 
     template = JINJA_ENVIRONMENT.get_template('index.html')   

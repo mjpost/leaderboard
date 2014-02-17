@@ -67,6 +67,9 @@
                   {% endif %}
                 </td>
                 <td>
+                  {% if expired[a.number] %}
+                  <div><em>Deadline expired</em></div>
+                  {% else %}
                   <form action="/upload?" method="post" enctype="multipart/form-data">
                     <div class="fileinput fileinput-new uploadinput-{{ a.number }}" data-provides="fileinput">
                       <span class="btn btn-default btn-file">
@@ -80,6 +83,7 @@
                     </div>
                     <button class="btn btn-primary" type="submit" disabled="disabled" id="upload-{{ a.number }}">Upload</button>
                   </form>
+                  {% endif %}
                 </td>
                 <td>
                 {% if a.filename %}
