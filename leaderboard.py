@@ -28,7 +28,7 @@ CURRENT_ASSIGNMENT = 1
 # Assignment deadlines in UTC
 DEADLINES = [
   datetime.datetime(2014, 02, 10, 23, 00),
-  datetime.datetime(2014, 02, 17, 23, 00),
+  datetime.datetime(2014, 02, 19, 23, 00),
 ]
 
 DEADLINES_PASSED = [datetime.datetime.now() >= x for x in DEADLINES]
