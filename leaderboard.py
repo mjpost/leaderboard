@@ -31,6 +31,7 @@ DEADLINES = [
   datetime.datetime(2014, 02, 17, 23, 00),
 ]
 
+DEADLINES_PASSED = [datetime.datetime.now() >= x for x in DEADLINES]
 
 #################################################################
 # End 
@@ -85,7 +86,6 @@ class MainPage(webapp2.RequestHandler):
     # Retrieve all the user's assignments, up to and including the current one. Entries that don't
     # exist are created.
     assignments = [None for x in range(CURRENT_ASSIGNMENT+1)]
-    expired = [False for x in range(CURRENT_ASSIGNMENT+1)]
     for ass in Assignment.query(Assignment.user == user).fetch():
       if ass.number < len(assignments):
         assignments[ass.number] = ass
@@ -99,10 +99,6 @@ class MainPage(webapp2.RequestHandler):
         assignments[i].score = float("-inf") if reverse_order[i] else float("inf")
         assignments[i].put()
 
-      if i < len(DEADLINES):
-        expired[i] = datetime.datetime.now() >= DEADLINES[i]
-        print >> sys.stderr, datetime.datetime.now(), DEADLINES[i], expired[i]
-
     template_values = {
       'user': user.email(),
       'handle': user_handle.handle,
@@ -110,7 +106,7 @@ class MainPage(webapp2.RequestHandler):
       'checked': 'checked' if user_handle.leaderboard else '',
       'logout': users.create_logout_url('/'),
       'assignments': assignments,
-      'expired': expired,
+      'expired': DEADLINES_PASSED,
     }
 
     template = JINJA_ENVIRONMENT.get_template('index.html')   
@@ -119,7 +115,7 @@ class MainPage(webapp2.RequestHandler):
 # Scoring functions.
 # These functions must be implemented to score each assignment.
 
-def score_sanity_check(filedata):
+def score_sanity_check(filedata, test = None):
   """Homework 0 (setup)."""
   value = filedata.split('\n')[0]
   try:
@@ -130,14 +126,14 @@ def score_sanity_check(filedata):
 def score_dummy(filename):
   return 1.0
 
-scorers = {
-  '0': score_sanity_check,
-  '1': scoring.alignment.score,
-  '2': score_dummy,
-  '3': score_dummy,
-  '4': score_dummy,
-  '5': score_dummy,
-}
+scorers = [
+  score_sanity_check,
+  scoring.alignment.score,
+  score_dummy,
+  score_dummy,
+  score_dummy,
+  score_dummy,
+]
 
 class Upload(webapp2.RequestHandler):
   def post(self):
@@ -145,7 +141,7 @@ class Upload(webapp2.RequestHandler):
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
 
-    number = self.request.get('number')
+    number = int(self.request.get('number'))
     assignment = Assignment.get_by_id(key(user, number))
 
     if assignment is None:
@@ -153,8 +149,21 @@ class Upload(webapp2.RequestHandler):
 
     assignment.filedata = self.request.get('file')
     assignment.filename = self.request.POST.multi['file'].filename
-    assignment.score = scorers.get(number)(assignment.filedata)
+    assignment.score = scorers[number](assignment.filedata)
     assignment.put()
+
+    self.redirect('/?')
+
+class Score(webapp2.RequestHandler):
+  """Used to trigger manual rescoring of assignments."""
+  def get(self):
+    user = users.get_current_user()
+
+    for a in Assignment.query().fetch():
+      if a.filedata:
+        old_score = a.score
+        a.score = scorers[a.number](a.filedata, test = DEADLINES_PASSED[a.number])
+        a.put()
 
     self.redirect('/?')
 
@@ -231,4 +240,5 @@ application = webapp2.WSGIApplication([
   ('/upload', Upload),
   ('/handle', ChangeHandle),
   ('/leaderboard.js', LeaderBoard),
+  ('/rescore', Score),
 ], debug=True)
