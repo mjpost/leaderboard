@@ -1,8 +1,15 @@
 import os
 import sys
 import optparse
+import datetime
 
-def score(a_input, test = False):
+reverse_order = False
+deadline = datetime.datetime(2014, 02, 17, 23, 00)
+
+def oracle():
+  return float('-inf')
+
+def score(a_input, assignment_key, test = False):
     f_data, e_data, a_data = map(open, ['%s/alignment_data/hansards.%s' % (os.path.dirname(os.path.realpath(__file__)), x) for x in ['f','e','a']])
 
     (size_a, size_s, size_a_and_s, size_a_and_p) = (0.0,0.0,0.0,0.0)
@@ -32,7 +39,7 @@ def score(a_input, test = False):
     recall = size_a_and_s / size_s
     aer = 1 - ((size_a_and_s + size_a_and_p) / (size_a + size_s))
 
-    return aer
+    return (aer, 100)
 
 if __name__ == '__main__':
     optparser = optparse.OptionParser()
