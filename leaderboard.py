@@ -244,8 +244,8 @@ class LeaderBoard(webapp2.RequestHandler):
           fail_if_old(assignment, i)
         scores[handle].append(most_recent_scored_submission(history, user, i).score)
 
-    for s in scorer:
-      scores['oracle'].append(s.oracle() if s.oracle() else s.default_score)
+    for i, s in enumerate(scorer):
+      scores['oracle'].append(s.oracle() if s.oracle() else default_score[i])
         
     def score_sort(x, y):
       index = CURRENT_ASSIGNMENT
