@@ -213,11 +213,19 @@ class UpdateSchema(webapp2.RequestHandler):
     if users.is_current_user_admin():
       count = 0
       for a in Assignment.query().fetch():
+        modified = False
         if a.percent_complete is None:
           a.percent_complete = 100
-          a.put()
+          modified = True
+        if a.test_score is None:
+          a.test_score = default_score[a.number] # wrong, but expedient
+          modified = True
+        if modified:
           count += 1
+          a.put()
       self.response.write('Updated %d assignments\n' % (count,))
+    else:
+     self.redirect('/?')
 
 
 class LeaderBoard(webapp2.RequestHandler):
@@ -269,6 +277,39 @@ class LeaderBoard(webapp2.RequestHandler):
     self.response.write(template.render(template_values))
 
 
+class AdminPanel(webapp2.RequestHandler):
+  '''admin function: update entities created before the schema was extended'''
+  def get(self):
+    if users.is_current_user_admin():
+      handles = Handle.query().fetch()
+      hw_data = defaultdict(list)
+
+      assignments = Assignment.query().order(-Assignment.timestamp).fetch()
+      for a in assignments:
+        hw_data[a.user].append(a)
+    
+      user = users.get_current_user()
+      template = JINJA_ENVIRONMENT.get_template('admin.html')
+      template_values = {
+        'user': user.email(),
+        'handles': handles,
+        'assignments': hw_data,
+      }
+      self.response.write(template.render(template_values))
+    else:
+      self.redirect('/?')
+
+
+class GetSubmission(webapp2.RequestHandler):
+  '''Download a student's submission file'''
+  def get(self):
+    if users.is_current_user_admin():
+      a = ndb.Key(urlsafe=self.request.get('id')).get()
+      self.response.write(a.filedata)
+    else:
+      self.redirect('/?')
+
+
 application = webapp2.WSGIApplication([
   ('/', MainPage),
   ('/upload', Upload),
@@ -277,5 +318,7 @@ application = webapp2.WSGIApplication([
   ('/queued_score', QueuedScore),
   ('/progress', Progress),
   ('/update_schema', UpdateSchema),
+  ('/admin', AdminPanel),
+  ('/get_submission', GetSubmission),
 #  ('/rescore', Rescore),
 ], debug=True)
