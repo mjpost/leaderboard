@@ -207,6 +207,19 @@ class ChangeHandle(webapp2.RequestHandler):
     self.redirect('/?')
 
 
+class UpdateSchema(webapp2.RequestHandler):
+  '''admin function: update entities created before the schema was extended'''
+  def get(self):
+    if users.is_current_user_admin():
+      count = 0
+      for a in Assignment.query().fetch():
+        if a.percent_complete is None:
+          a.percent_complete = 100
+          a.put()
+          count += 1
+      self.response.write('Updated %d assignments\n' % (count,))
+
+
 class LeaderBoard(webapp2.RequestHandler):
   def get(self):
     user = users.get_current_user()
@@ -263,5 +276,6 @@ application = webapp2.WSGIApplication([
   ('/leaderboard.js', LeaderBoard),
   ('/queued_score', QueuedScore),
   ('/progress', Progress),
+  ('/update_schema', UpdateSchema),
 #  ('/rescore', Rescore),
 ], debug=True)
