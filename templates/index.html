@@ -167,7 +167,7 @@
         $.get('/progress?i=' + i,
           function(progress){
             if (progress < 100){
-              setTimeout('update_progress('+i+')', 15000);
+              setTimeout('update_progress('+i+')', 1000);
               if (most_progress < progress){
                 $('#progressbar-'+i).attr('style', 'width: ' + progress + '%');
                 $('#progressbar-'+i).attr('aria-valuenow', progress);
@@ -192,7 +192,7 @@
         });
         {% for p in progress %}
         if($('#progressbar-{{ loop.index0 }}').length > 0){
-          setTimeout('update_progress({{ loop.index0 }})', 15000);
+          setTimeout('update_progress({{ loop.index0 }})', 1000);
         }
         {% if p < 100 %}
           $('#changefile-{{ loop.index0 }}').attr('disabled', 'disabled');

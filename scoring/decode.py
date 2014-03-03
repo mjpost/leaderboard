@@ -120,7 +120,7 @@ def sentence_logprob(f, e, tm, lm):
           for ei in xrange(len(e)+1-len(ephrase)):
             ej = ei+len(ephrase)
             if ephrase == e[ei:ej]:
-              alignments[ei].append((ej, phrase.logprob, fi, fj))
+              alignments[ei].append((ej, phrase.logprob, bitmap(xrange(fi,fj))))
 
   # Compute sum of probability of all possible alignments by dynamic programming.
   # To do this, recursively compute the sum over all possible alignments for each
@@ -131,9 +131,9 @@ def sentence_logprob(f, e, tm, lm):
   chart[0][0] = 0.0
   for ei, sums in enumerate(chart[:-1]):
     for v in sums:
-      for ej, logprob, fi, fj in alignments[ei]:
-        if bitmap(range(fi,fj)) & v == 0:
-          new_v = bitmap(range(fi,fj)) | v
+      for ej, logprob, fbits in alignments[ei]:
+        if fbits & v == 0:
+          new_v = fbits | v
           if new_v in chart[ej]:
             chart[ej][new_v] = logadd10(chart[ej][new_v], sums[v]+logprob)
           else:
@@ -168,7 +168,7 @@ def set_sentence_scores(assignment_key, sentence_score_pairs):
   assignment.put()
 
 
-CHUNK_SIZE = 1
+CHUNK_SIZE = 48
 TIMEOUT_MINUTES = 10
 
 def queued_score(data, assignment_key):
@@ -195,13 +195,11 @@ def queued_score(data, assignment_key):
   lm_file = '%s/decoding_data/lm' % os.path.dirname(os.path.realpath(__file__))
   lm = LM(lm_file, bitext)
   
-  results = []
   for i, (f, e) in enumerate(bitext):
     sent_num = chunk_start+i
     logprob = sentence_logprob(f,e, tm, lm)
     logging.info("Scored file %s, sentence %d, result=%.2f\n" % (a.filename, sent_num, logprob))
-    results.append((sent_num, logprob))
-  set_sentence_scores(assignment_key, results)
+    set_sentence_scores(assignment_key, [(sent_num, logprob)])
 
   
 def oracle():
