@@ -57,9 +57,9 @@
               <th>Score</th>
             </thead>
             <tbody>
-              {% for a in assignments %}
-              <tr>
-                <td><a href="http://mt-class.org/jhu/hw{{a.number}}.html">{{ a.number }}</a></td>
+              {% for a in assignments|reverse %}
+              <tr {% if a.number == current %}class="success"{% endif %}>
+                <td><a href="http://mt-class.org/jhu/hw{{a.number}}.html">{{ a.number }}</a>{% if a.number == current %} (Current){% endif %}</td>
                 <td>
                   {% if a.filename %}
                   <span>{{ a.filename }}<span><br />
@@ -70,9 +70,9 @@
                   {% if expired[a.number] %}
                   <div><em>Deadline expired</em></div>
                   {% else %}
-                  <form action="/upload?" method="post" enctype="multipart/form-data">
+                  <form action="/upload?" method="post" enctype="multipart/form-data" onsubmit="upload_clicked({{ a.number }})">
                     <div class="fileinput fileinput-new uploadinput-{{ a.number }}" data-provides="fileinput">
-                      <span class="btn btn-default btn-file">
+                      <span class="btn btn-default btn-file" id="changefile-{{ a.number }}">
                         <span class="fileinput-new">Select file</span>
                         <span class="fileinput-exists">Change file</span>
                         <input type="file" id="file" name="file"/>
@@ -90,21 +90,60 @@
                   {% if a.score == 0 %}
                     [Error]
                   {% else %}
-                    {{ a.score }}
+                    {{ "%.2f" % a.score }}
+                    {% if progress[a.number] < 100 %}
+                      <span id="updating">(Updating)</span><br/>
+                      <div class="progress" id="progress-{{ a.number }}">
+                        <div id="progressbar-{{ a.number }}" class="progress-bar" role="progressbar" aria-valuenow="{{ progress[a.number] }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress[a.number] }}%;">
+                          {{ progress[a.number] }}%
+                        </div>
+                      </div>
+                    {% endif %}
                   {% endif %}
                 {% endif %}
                 </td>
               </tr>
-          {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div><!-- panel -->
+
+      {% for i in history|reverse %}
+      <div class="panel panel-default">
+        <div class="panel-heading">Assignment {{ current - loop.index0 }} History</div>
+        <div class="panel-body">
+          <table class="table table-striped">
+            <thead>
+              <th>Date/Time</th>
+              <th>File</th>
+              <th>Score</th>
+            </thead>
+            <tbody>
+              {% for item in i %}
+              <tr>
+                <td>{{ item.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</td>
+                <td>{{ item.filename }}</td>
+                <td>{% if item.filename %}
+                  {% if item.percent_complete < 100 %}
+                    <span class="text-success"><b>Updating</b></span>
+                  {% elif item.score == 0 %}
+                    [Error]
+                  {% else %}
+                    {{ "%.2f" % item.score }}
+                  {% endif %}
+                {% endif %}</td>
+              </tr>
+              {% endfor %}
+            <tbody>
+          </table>
+        </div>
+      </div><!-- panel -->
+      {% endfor %}
     </div>
-    <div id="debug_area"></div>
-    <div id="model_area"></div>
 
     <!-- JavaScript -->
     <script src="static/js/jquery-1.10.2.min.js"></script>
-    <script src="static/js/jquery.jsPlumb-1.4.1-all-min.js"></script>
     <script src="static/js/bootstrap.min.js"></script>
     <script src="static/js/jasny-bootstrap.min.js"></script>
     <script type="text/javascript">
@@ -116,9 +155,30 @@
         $("#upload-{{a.number }}").attr("disabled", "disabled");
       })
       {% endfor %}
-      $(".jumbotron").on( "scroll", function(){
-        jsPlumb.repaintEverything();       
-      });
+      function upload_clicked(i) {
+        $('#changefile-'+i).attr('disabled', 'disabled');
+        $('#upload-'+i).attr('disabled', 'disabled');
+      }
+      var most_progress = new Array();
+      {% for p in progress %}
+      most_progress[{{ loop.index0 }}] = {{ p }};
+      {% endfor %}
+      function update_progress(i) {
+        $.get('/progress?i=' + i,
+          function(progress){
+            if (progress < 100){
+              setTimeout('update_progress('+i+')', 5000);
+              if (most_progress < progress){
+                $('#progressbar-'+i).attr('style', 'width: ' + progress + '%');
+                $('#progressbar-'+i).attr('aria-valuenow', progress);
+                $('#progressbar-'+i).text(progress + '%');
+                most_progress[i] = progress;
+              }
+            } else {
+              window.location.reload();
+            }
+          })
+      }
       $(document).ready(function() {
 //        var checked = $('#handlediv').val($('#leaderboard').is(':checked'));
         var checked = $('#leaderboard').is(':checked');
@@ -130,6 +190,14 @@
         $('#leaderboard').change(function() {
           $('#handlediv').toggle();
         });
+        {% for p in progress %}
+        if($('#progressbar-{{ loop.index0 }}').length > 0){
+          setTimeout('update_progress({{ loop.index0 }})', 5000);
+        }
+        {% if p < 100 %}
+          $('#changefile-{{ loop.index0 }}').attr('disabled', 'disabled');
+        {% endif %}
+        {% endfor %}
       });
     </script>
   </body>
