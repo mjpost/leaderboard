@@ -222,11 +222,12 @@ def queued_score(data, assignment_key):
  
 
 def oracle():
-  mscores = ModelScore.query().fetch() 
-  best_score = defaultdict(lambda: float('-inf'))
-  for mscore in mscores:
-    best_score[mscore.chunk] = max([best_score[mscore.chunk], mscore.score])
-  return sum(best_score.itervalues())
+  #mscores = ModelScore.query().fetch() 
+  #best_score = defaultdict(lambda: float('-inf'))
+  #for mscore in mscores:
+  #  best_score[mscore.chunk] = max([best_score[mscore.chunk], mscore.score])
+  #return sum(best_score.itervalues())
+  return -1305.17
 
 
 def score(english_data, assignment_key, test=False):
