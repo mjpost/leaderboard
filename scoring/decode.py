@@ -48,7 +48,7 @@ def TM(filename, k, bitext):
 
 # # A language model scores sequences of English words, and must account
 # # for both beginning and end of each sequence. Example API usage:
-# lm = LM(filename)
+# lm = LM(filename, bitext) # filter to only words in english side of bitext
 # sentence = "This is a test ."
 # lm_state = lm.begin() # initial state is always <s>
 # logprob = 0.0
@@ -58,14 +58,13 @@ def TM(filename, k, bitext):
 # logprob += lm.end(lm_state) # transition to </s>, can also use lm.score(lm_state, "</s>")[1]
 ngram_stats = namedtuple("ngram_stats", "logprob, backoff")
 class LM:
-  def __init__(self, filename, tm):
+  def __init__(self, filename, bitext):
     logging.info("Reading language model from %s...\n" % (filename,))
     self.table = {}
     e_words = set(['<s>', '</s>', '<unk>'])
-    for entry in tm.itervalues(): # limit mem use by keeping ony useful entries
-      for translation in entry:
-        for word in translation.english:
-          e_words.add(word)
+    for f, e in bitext: # limit mem use by keeping ony useful entries
+      for word in e:
+        e_words.add(word)
     for line in open(filename):
       entry = line.strip().split("\t")
       if len(entry) > 1 and entry[0] != "ngram":
@@ -146,14 +145,30 @@ def sentence_logprob(f, e, tm, lm):
     return float('-inf')
 
 
-class ModelScore(ndb.Model):
-  assignment = ndb.KeyProperty()
-  score = ndb.FloatProperty()
-  chunk = ndb.IntegerProperty()
+class PerSentenceScores(ndb.Model): # assignment must be the parent
+  score = ndb.FloatProperty(repeated=True)
+
+
+@ndb.transactional()
+def set_sentence_scores(assignment_key, sentence_score_pairs):
+  assignment = assignment_key.get()
+  query_result = PerSentenceScores.query(ancestor=assignment_key).fetch()
+  if len(query_result) != 1:
+    logging.error('Found %d PerSentenceScores objects for assignment %s' % (len(query_result), assignment_key))
+    assignment.percent_complete = 100
+  else:
+    pss = query_result[0]
+    for sent_num, score in sentence_score_pairs:
+      pss.score[sent_num] = score
+    pss.put()
+    num = len(filter(lambda x: x > float('-inf'), pss.score))
+    assignment.percent_complete = 100 * num/len(pss.score)
+    if assignment.percent_complete == 100:
+      assignment.score = sum(pss.score)
+  assignment.put()
 
 
 CHUNK_SIZE = 1
-MAGIC_NUMBER = 12345
 TIMEOUT_MINUTES = 10
 
 def queued_score(data, assignment_key):
@@ -161,73 +176,41 @@ def queued_score(data, assignment_key):
   a = assignment_key.get()
   english_data = a.filedata
   english = [tuple(line.strip().split()) for line in english_data.strip().split("\n")]
-  if chunk == MAGIC_NUMBER:
-    # check for completed scores and update percent_complete
-    logging.info("Checking for completion of %s\n" % a.filename)
-    mscores = ModelScore.query(ModelScore.assignment == assignment_key).fetch()
-    num_scores = len(mscores)*CHUNK_SIZE
-    logging.info("Found scores for %d sentences out of %d\n" % (num_scores, len(english)))
-    if num_scores < len(english):
-      # if scores are not done, resubmit this task if inside timeout limit
-      earliest_time = datetime.datetime.now() - datetime.timedelta(minutes=TIMEOUT_MINUTES)
-      if a.timestamp > earliest_time:
-        taskqueue.add(url='/queued_score', 
-                      params={'number': 2, # ugh
-                              'key' : assignment_key.urlsafe(),
-                              'data' : MAGIC_NUMBER,
-                      },
-                      countdown=20,
-                      )
-        a.percent_complete = 100 * num_scores / len(english)
-      else: # otherwise give up
-        a.percent_complete = 100
-        a.score = float("-inf")
-    else: # found all scores
-      a.percent_complete = 100
-      a.score = sum([m.score for m in mscores])
-    a.put()
 
-  else:
-    chunk_start = chunk*CHUNK_SIZE
-    chunk_end = (chunk+1)*CHUNK_SIZE
+  chunk_start = chunk*CHUNK_SIZE
+  chunk_end = (chunk+1)*CHUNK_SIZE
   
-    french_file = '%s/decoding_data/input' % os.path.dirname(os.path.realpath(__file__))
-    french = [tuple(line.strip().split()) for line in open(french_file).readlines()]
-    bitext = [(f, e) for (f, e) in zip(french, english)[chunk_start:chunk_end]]
+  french_file = '%s/decoding_data/input' % os.path.dirname(os.path.realpath(__file__))
+  french = [tuple(line.strip().split()) for line in open(french_file).readlines()]
+  bitext = [(f, e) for (f, e) in zip(french, english)[chunk_start:chunk_end]]
 
-    tm_file = '%s/decoding_data/tm' % os.path.dirname(os.path.realpath(__file__))
-    tm = TM(tm_file, sys.maxint, bitext)
-    # tm should translate unknown words as-is with probability 1
-    for word in set(sum(french,())):
-      phr = (word,)
-      if phr not in tm:
-        tm[phr] = [Phrase(phr, 0.0)]
+  tm_file = '%s/decoding_data/tm' % os.path.dirname(os.path.realpath(__file__))
+  tm = TM(tm_file, sys.maxint, bitext)
+  # tm should translate unknown words as-is with probability 1
+  for word in set(sum(french,())):
+    phr = (word,)
+    if phr not in tm:
+      tm[phr] = [Phrase(phr, 0.0)]
  
-    lm_file = '%s/decoding_data/lm' % os.path.dirname(os.path.realpath(__file__))
-    lm = LM(lm_file, tm)
-   
-    total_logprob = 0.0
-    for f, e in bitext:
-      total_logprob += sentence_logprob(f,e, tm, lm)
+  lm_file = '%s/decoding_data/lm' % os.path.dirname(os.path.realpath(__file__))
+  lm = LM(lm_file, bitext)
   
-    logging.info("Scored file %s, segments %d-%d, result=%.2f\n" % (a.filename, chunk_start, chunk_end-1, total_logprob))
-    model_score = ModelScore(assignment = assignment_key,
-                             chunk = chunk,
-                             score = total_logprob)
-    model_score.put()
-    mscores = ModelScore.query(ModelScore.assignment == assignment_key).fetch()
-    num_scores = len(mscores)*CHUNK_SIZE
-    a.percent_complete = 100 * num_scores / len(english)
-    a.put()
- 
+  results = []
+  for i, (f, e) in enumerate(bitext):
+    sent_num = chunk_start+i
+    logprob = sentence_logprob(f,e, tm, lm)
+    logging.info("Scored file %s, sentence %d, result=%.2f\n" % (a.filename, sent_num, logprob))
+    results.append((sent_num, logprob))
+  set_sentence_scores(assignment_key, results)
 
+  
 def oracle():
-  #mscores = ModelScore.query().fetch() 
-  #best_score = defaultdict(lambda: float('-inf'))
-  #for mscore in mscores:
-  #  best_score[mscore.chunk] = max([best_score[mscore.chunk], mscore.score])
-  #return sum(best_score.itervalues())
-  return -1305.17
+  french_file = '%s/decoding_data/input' % os.path.dirname(os.path.realpath(__file__))
+  per_sentence_oracle = [float('-inf') for _ in open(french_file).readlines()]
+  query_results = PerSentenceScores.query().fetch()
+  for pss in query_results:
+    per_sentence_oracle = [max(a,b) for a, b in zip(pss.score, per_sentence_oracle)]
+  return sum(per_sentence_oracle)
 
 
 def score(english_data, assignment_key, test=False):
@@ -240,7 +223,10 @@ def score(english_data, assignment_key, test=False):
       logging.warning("len(e) = %d, len(f) = %d" % (len(english), len(french)))
       return (float("-inf"), 100)
     else:
-      for i in range(len(english)/CHUNK_SIZE) + [MAGIC_NUMBER]:
+      pss = PerSentenceScores(parent = assignment_key, 
+                              score = [float('-inf') for _ in english])
+      pss.put()
+      for i in range(len(english)/CHUNK_SIZE):
         taskqueue.add(url='/queued_score', 
                       params={'number': 2, # ugh
                               'key' : assignment_key.urlsafe(),
