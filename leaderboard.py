@@ -49,7 +49,6 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 class Assignment(ndb.Model):
   """A database entry corresponding to an assignment."""
-  user = ndb.UserProperty()
   handle = ndb.KeyProperty()
   number = ndb.IntegerProperty()
   filename = ndb.StringProperty()
@@ -57,7 +56,7 @@ class Assignment(ndb.Model):
   score = ndb.FloatProperty()
   test_score = ndb.FloatProperty()
   percent_complete = ndb.IntegerProperty()
-  timestamp = ndb.DateTimeProperty(auto_now=True)
+  timestamp = ndb.DateTimeProperty(auto_now_add=True)
 
 
 class Handle(ndb.Model):
@@ -80,16 +79,31 @@ def fail_if_old(assignment, number):
         assignment.put()
 
 
-def get_submission_history(user, i):
-  return Assignment.query(Assignment.user == user,
+def get_submission_history(handle, i):
+  return Assignment.query(Assignment.handle== handle.key,
                           Assignment.number == i).order(-Assignment.timestamp).fetch()
 
 
-def most_recent_scored_submission(submission_history, user, i):
+def most_recent_scored_submission(submission_history, handle, i):
   return next((a for a in submission_history if a.percent_complete == 100 or a.percent_complete is None),
               submission_history[0] if len(submission_history) > 0 else
-              Assignment(user=user, number=i, filedata=None, 
+              Assignment(handle=handle.key, number=i, filedata=None, 
                          score=default_score[i], percent_complete=100))
+
+
+def get_handle(user):
+  query_result = Handle.query(Handle.user == user).fetch()
+  if len(query_result) == 0:
+    user_handle = Handle(user = user, 
+                         leaderboard = True, 
+                         handle = user.nickname())
+    user_handle.put()
+    return user_handle
+  elif len(query_result) == 1:
+    return query_result[0]
+  else:
+    return query_result[0]
+    logging.warning('More than one handle for user %s' % (user.nickname(),))
 
 
 class MainPage(webapp2.RequestHandler):
@@ -100,13 +114,7 @@ class MainPage(webapp2.RequestHandler):
       return self.redirect(users.create_login_url(self.request.uri))
 
     # Create the user's handle in the database if it does not exist
-    user_handle = Handle.get_by_id(user.user_id())
-    if user_handle is None:
-      user_handle = Handle(id = user.user_id(), 
-                           user = user, 
-                           leaderboard = True, 
-                           handle = user.nickname())
-      user_handle.put()
+    user_handle = get_handle(user)
 
     # Retrieve all the user's assignments. For each assignment, choose
     # the most recent submission that is 100% complete. For the most
@@ -115,10 +123,10 @@ class MainPage(webapp2.RequestHandler):
     history = []
     progress = [] # ... of the assignment currently uploading
     for i, _ in enumerate(scorer):
-      history.append(get_submission_history(user, i))
+      history.append(get_submission_history(user_handle, i))
       for assignment in history[-1]:
         fail_if_old(assignment, i)
-      assignments.append(most_recent_scored_submission(history[-1], user, i))
+      assignments.append(most_recent_scored_submission(history[-1], user_handle, i))
       progress.append(history[-1][0].percent_complete if len(history[-1]) > 0 else 100)
 
     template_values = {
@@ -143,8 +151,10 @@ class Progress(webapp2.RequestHandler):
     user = users.get_current_user()
     if user is None:
       self.response.write("0")
+      return
+    user_handle = get_handle(user)
     number = int(self.request.get('i'))
-    history = get_submission_history(user, number)
+    history = get_submission_history(user_handle, number)
     progress = 100
     if len(history) > 0:
       progress = history[0].percent_complete 
@@ -156,9 +166,10 @@ class Upload(webapp2.RequestHandler):
     user = users.get_current_user()
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
+    user_handle = get_handle(user)
     number = int(self.request.get('number'))
     filedata = self.request.get('file')
-    assignment = Assignment(user = user,
+    assignment = Assignment(handle = user_handle.key,
                             number = number,
                             score = default_score[number],
                             test_score = default_score[number],
@@ -202,7 +213,7 @@ class ChangeHandle(webapp2.RequestHandler):
     user = users.get_current_user()
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
-    user_handle = Handle.get_by_id(user.user_id())
+    user_handle = get_handle(user)
     user_handle.handle = self.request.get('handle')
     user_handle.leaderboard = (self.request.get('leaderboard') == 'True')
     user_handle.put()
@@ -240,26 +251,26 @@ class UpdateSchema(webapp2.RequestHandler):
 class LeaderBoard(webapp2.RequestHandler):
   def get(self):
     user = users.get_current_user()
-    handles = {}
+    handles = []
     hidden_users = []
     names = {}
     for handle in Handle.query().fetch():
       # Ignore leaderboard prefs for self and for admins
       if handle.leaderboard:
-        handles[handle.user] = handle.handle
-      elif user is not None and (handle.user.email() == user.email() or users.is_current_user_admin()):
-        handles[handle.user] = handle.handle
+        handles.append(handle)
+      elif user is not None and (handle.user == user or users.is_current_user_admin()):
+        handles.append(handle)
         hidden_users.append(handle.handle)
       if users.is_current_user_admin():
         names[handle.handle] = handle.user.nickname()
 
     scores = defaultdict(list)
-    for user, handle in handles.iteritems():
+    for handle in handles:
       for i, _ in enumerate(scorer):
-        history = get_submission_history(user, i)
+        history = get_submission_history(handle, i)
         for assignment in history:
           fail_if_old(assignment, i)
-        scores[handle].append(most_recent_scored_submission(history, user, i).score)
+        scores[handle.handle].append(most_recent_scored_submission(history, handle, i).score)
 
     for i, s in enumerate(scorer):
       scores['oracle'].append(s.oracle() if s.oracle() else default_score[i])
@@ -292,15 +303,16 @@ class AdminPanel(webapp2.RequestHandler):
     if users.is_current_user_admin():
       handles = Handle.query().fetch()
       hw_data = defaultdict(list)
-
+       
       assignments = Assignment.query().order(-Assignment.timestamp).fetch()
       for a in assignments:
-        hw_data[a.user].append(a)
+        hw_data[a.handle].append(a)
     
       user = users.get_current_user()
       template = JINJA_ENVIRONMENT.get_template('admin.html')
       template_values = {
         'user': user.email(),
+        'logout': users.create_logout_url('/'),
         'handles': handles,
         'assignments': hw_data,
       }

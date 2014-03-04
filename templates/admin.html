@@ -19,7 +19,7 @@
     <div class="jumbotron">
       {% for handle in handles %}
       <div class="panel panel-default">
-        <div class="panel-heading">{{ handle.user.nickname() }} ({{ handle.handle }})</div>
+        <div class="panel-heading">{% if handle.user %}{{ handle.user.nickname() }}{% else %}<span class="text-warning"><b>Administrator account</b></span>{% endif %} ({{ handle.handle }})</div>
         <div class="panel-body">
           <table class="table table-striped">
             <thead>
@@ -30,7 +30,7 @@
               <th>Score</th>
             </thead>
             <tbody>
-            {% for a in assignments[handle.user] %}
+            {% for a in assignments[handle.key] %}
               <tr>
                 <td>{{ a.number }}</td>
                 <td><a href="get_submission?id={{ a.key.urlsafe() }}">{{ a.filename }}</a></td>
