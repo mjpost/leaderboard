@@ -3,6 +3,7 @@ import sys
 import time
 import math
 import urllib
+import logging
 
 from collections import defaultdict, namedtuple
 import datetime
@@ -49,6 +50,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class Assignment(ndb.Model):
   """A database entry corresponding to an assignment."""
   user = ndb.UserProperty()
+  handle = ndb.KeyProperty()
   number = ndb.IntegerProperty()
   filename = ndb.StringProperty()
   filedata = ndb.BlobProperty()
@@ -60,7 +62,7 @@ class Assignment(ndb.Model):
 
 class Handle(ndb.Model):
   """A database entry recording a user's anonymizing handle."""
-  user = ndb.UserProperty()
+  user = ndb.UserProperty() # a handle with no user belongs to the admins
   leaderboard = ndb.BooleanProperty()
   handle = ndb.TextProperty()
 
@@ -220,6 +222,13 @@ class UpdateSchema(webapp2.RequestHandler):
         if a.test_score is None:
           a.test_score = default_score[a.number] # wrong, but expedient
           modified = True
+        if a.handle is None:
+          query_result = Handle.query(Handle.user == a.user).fetch()
+          if len(query_result) == 1:
+            a.handle = query_result[0].key
+            modified = True
+          else:
+            logging.warning('Found %d handles for user %s, did not update' % (len(query_result), a.user))
         if modified:
           count += 1
           a.put()
