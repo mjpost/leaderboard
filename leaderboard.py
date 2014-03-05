@@ -34,7 +34,6 @@ CURRENT_ASSIGNMENT = len(scorer)-1
 # Assignment deadlines in UTC and sore order (True = highest first)
 reverse_order = [s.reverse_order for s in scorer]
 DEADLINES = [s.deadline for s in scorer]
-DEADLINES_PASSED = [datetime.datetime.now() >= x for x in DEADLINES]
 default_score = [float("-inf") if x else float("inf") for x in reverse_order]
 
 #################################################################
@@ -144,6 +143,7 @@ class MainPage(webapp2.RequestHandler):
       assignments.append(most_recent_scored_submission(history[-1], user_handle, i))
       progress.append(history[-1][0].percent_complete if len(history[-1]) > 0 else 100)
 
+    DEADLINES_PASSED = [datetime.datetime.now() >= x for x in DEADLINES]
     template_values = {
       'user': user.email(),
       'as_handle': user_handle,
