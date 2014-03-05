@@ -91,7 +91,15 @@ def most_recent_scored_submission(submission_history, handle, i):
                          score=default_score[i], percent_complete=100))
 
 
-def get_handle(user):
+def get_handle(user, request):
+  # special case: admin users can request to appear as another handle
+  if users.is_current_user_admin():
+    req_handle = request.get('as')
+    if req_handle:
+      logging.info('Admin requested user %s' % req_handle)
+      user_handle = ndb.Key(urlsafe=req_handle).get()
+      return user_handle
+      
   query_result = Handle.query(Handle.user == user).fetch()
   if len(query_result) == 0:
     user_handle = Handle(user = user, 
@@ -106,6 +114,9 @@ def get_handle(user):
     logging.warning('More than one handle for user %s' % (user.nickname(),))
 
 
+Message = namedtuple('Message', 'body, type')
+
+
 class MainPage(webapp2.RequestHandler):
   """Displays the main page."""
   def get(self):
@@ -113,8 +124,12 @@ class MainPage(webapp2.RequestHandler):
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
 
-    # Create the user's handle in the database if it does not exist
-    user_handle = get_handle(user)
+    messages = []
+    user_handle = get_handle(user, self.request)
+
+    if user_handle.user != user:
+      body = 'Any changes made on this page will affect handle %s.' % (user_handle.handle,)
+      messages.append(Message(body, 'danger'))
 
     # Retrieve all the user's assignments. For each assignment, choose
     # the most recent submission that is 100% complete. For the most
@@ -131,7 +146,7 @@ class MainPage(webapp2.RequestHandler):
 
     template_values = {
       'user': user.email(),
-      'handle': user_handle.handle,
+      'as_handle': user_handle,
       'leaderboard': user_handle.leaderboard,
       'checked': 'checked' if user_handle.leaderboard else '',
       'logout': users.create_logout_url('/'),
@@ -140,6 +155,8 @@ class MainPage(webapp2.RequestHandler):
       'history': history,
       'current': CURRENT_ASSIGNMENT,
       'progress': progress,
+      'messages': messages,
+      'show_admin_panel': users.is_current_user_admin(),
     }
 
     template = JINJA_ENVIRONMENT.get_template('index.html')   
@@ -152,7 +169,7 @@ class Progress(webapp2.RequestHandler):
     if user is None:
       self.response.write("0")
       return
-    user_handle = get_handle(user)
+    user_handle = get_handle(user, self.request)
     number = int(self.request.get('i'))
     history = get_submission_history(user_handle, number)
     progress = 100
@@ -166,7 +183,7 @@ class Upload(webapp2.RequestHandler):
     user = users.get_current_user()
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
-    user_handle = get_handle(user)
+    user_handle = get_handle(user, self.request)
     number = int(self.request.get('number'))
     filedata = self.request.get('file')
     assignment = Assignment(handle = user_handle.key,
@@ -183,7 +200,7 @@ class Upload(webapp2.RequestHandler):
     assignment.test_score = test_score
     assignment.percent_complete = percent_complete
     assignment.put() 
-    self.redirect('/?')
+    self.redirect('/?as=%s' % (self.request.get('as'),))
 
 
 class QueuedScore(webapp2.RequestHandler):
@@ -213,11 +230,11 @@ class ChangeHandle(webapp2.RequestHandler):
     user = users.get_current_user()
     if user is None:
       return self.redirect(users.create_login_url(self.request.uri))
-    user_handle = get_handle(user)
+    user_handle = get_handle(user, self.request)
     user_handle.handle = self.request.get('handle')
     user_handle.leaderboard = (self.request.get('leaderboard') == 'True')
     user_handle.put()
-    self.redirect('/?')
+    self.redirect('/?as=%s' % (self.request.get('as'),))
 
 
 class UpdateSchema(webapp2.RequestHandler):
@@ -262,7 +279,10 @@ class LeaderBoard(webapp2.RequestHandler):
         handles.append(handle)
         hidden_users.append(handle.handle)
       if users.is_current_user_admin():
-        names[handle.handle] = handle.user.nickname()
+        if handle.user:
+          names[handle.handle] = handle.user.nickname()
+        else:
+          names[handle.handle] = 'admin'
 
     scores = defaultdict(list)
     for handle in handles:

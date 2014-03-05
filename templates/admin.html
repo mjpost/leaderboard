@@ -9,7 +9,7 @@
   <body>
     <nav class="navbar navbar-inverse" role="navigation">
       <ul class="nav navbar-nav">
-        <li><a href="#">JHU MT class admin console</a></li>
+        <li><a href="/">JHU MT class assignment submissions</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="{{ logout }}">Logout {{ user }}</a></li>
@@ -19,7 +19,14 @@
     <div class="jumbotron">
       {% for handle in handles %}
       <div class="panel panel-default">
-        <div class="panel-heading">{% if handle.user %}{{ handle.user.nickname() }}{% else %}<span class="text-warning"><b>Administrator account</b></span>{% endif %} ({{ handle.handle }})</div>
+        <div class="panel-heading">
+          {% if handle.user %}
+            {{ handle.user.nickname() }}
+          {% else %}
+            <a href="/?as={{ handle.key.urlsafe() }}">Admin-controlled handle</a>
+          {% endif %} 
+          ({{ handle.handle }})
+        </div>
         <div class="panel-body">
           <table class="table table-striped">
             <thead>

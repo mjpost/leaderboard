@@ -9,7 +9,10 @@
   <body>
     <nav class="navbar navbar-inverse" role="navigation">
       <ul class="nav navbar-nav">
-        <li><a href="#">JHU MT class assignment submissions</a></li>
+        <li><a href="/">JHU MT class assignment submissions</a></li>
+        {% if show_admin_panel %}
+        <li><a href="/admin">Admin console</a></li>
+        {% endif %}
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="{{ logout }}">Logout {{ user }}</a></li>
@@ -17,10 +20,16 @@
     </nav>
 
     <div class="jumbotron">
+      {% for message in messages %}
+      <div class="panel panel-{{ message.type }}">
+        <div class='panel-heading'></div>
+        <div class='panel-body'><span class="text-{{ message.type }}"><b>{{ message.body }}</b></span></div>
+      </div>
+      {% endfor %}
       <div class="panel panel-default">
         <div class="panel-heading">Leaderboard</div>
         <div class="panel-body">
-          <form class="form-inline" role="form" action="/handle?" method="post">
+          <form class="form-inline" role="form" action="/handle?as={{ as_handle.key.urlsafe() }}" method="post">
             <div class="checkbox">
                 <input type="checkbox" id="leaderboard" name="leaderboard" {{ checked }} value="True" />
                 Show me on the leaderboard
@@ -34,8 +43,8 @@
                        class="form-control" 
                        id="handle" 
                        name="handle" 
-                       placeholder="{{ handle }}" 
-                       value="{{ handle }}" />
+                       placeholder="{{ as_handle.handle }}" 
+                       value="{{ as_handle.handle }}" />
               </div>
             </div>
             <div class="form-group">
@@ -70,7 +79,7 @@
                   {% if expired[a.number] %}
                   <div><em>Deadline expired</em></div>
                   {% else %}
-                  <form action="/upload?" method="post" enctype="multipart/form-data" onsubmit="upload_clicked({{ a.number }})">
+                  <form action="/upload?as={{ as_handle.key.urlsafe() }}" method="post" enctype="multipart/form-data" onsubmit="upload_clicked({{ a.number }})">
                     <div class="fileinput fileinput-new uploadinput-{{ a.number }}" data-provides="fileinput">
                       <span class="btn btn-default btn-file" id="changefile-{{ a.number }}">
                         <span class="fileinput-new">Select file</span>
@@ -164,7 +173,7 @@
       most_progress[{{ loop.index0 }}] = {{ p }};
       {% endfor %}
       function update_progress(i) {
-        $.get('/progress?i=' + i,
+        $.get('/progress?i=' + i + '&as={{ as_handle.key.urlsafe() }}',
           function(progress){
             if (progress < 100){
               setTimeout('update_progress('+i+')', 1000);
