@@ -12,6 +12,13 @@ indexes:
 
 - kind: Assignment
   properties:
+  - name: handle
+  - name: number
+  - name: timestamp
+    direction: desc
+
+- kind: Assignment
+  properties:
   - name: number
   - name: user
   - name: timestamp
