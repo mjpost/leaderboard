@@ -17,6 +17,7 @@ import webapp2
 import scoring.upload_number
 import scoring.alignment
 import scoring.decode
+import scoring.evaluation
 
 #################################################################
 # Assignment-related variables
@@ -25,7 +26,8 @@ import scoring.decode
 scorer = [
   scoring.upload_number,
   scoring.alignment,
-  scoring.decode
+  scoring.decode,
+  scoring.evaluation,
 ]
 
 # The index of the current assignment (0-indexed)

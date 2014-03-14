@@ -34,7 +34,8 @@
               <th>File</th>
               <th>Timestamp</th>
               <th>% Scored</th>
-              <th>Score</th>
+              <th>Dev Score</th>
+              <th>Test Score</th>
             </thead>
             <tbody>
             {% for a in assignments[handle.key] %}
@@ -44,6 +45,7 @@
                 <td>{{ a.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</td>
                 <td>{{ a.percent_complete }}</td>
                 <td>{{ "%.2f" % a.score }}</td>
+                <td>{{ "%.2f" % a.test_score }}</td>
               </tr>
             {% endfor %}
             </tbody>
