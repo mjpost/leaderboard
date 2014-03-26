@@ -63,7 +63,8 @@
               <th>No.</th>
               <th>File</th>
               <th>Upload</th>
-              <th>Score</th>
+              <th>Dev Score</th>
+              <th>Test Score</th>
             </thead>
             <tbody>
               {% for a in assignments|reverse %}
@@ -78,10 +79,11 @@
                 <td>
                   {% if a.filename %}
                   <span>{{ a.filename }}<span><br />
-                  <span class="submitted">Submitted {{ a.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</span>
+                  <span class="submitted">Uploaded {{ a.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</span>
                   {% endif %}
                 </td>
                 <td>
+                  {% if as_handle.submitted_assignments[current - loop.index0] == False %}
                   <form action="/upload?as={{ as_handle.key.urlsafe() }}" method="post" enctype="multipart/form-data" onsubmit="upload_clicked({{ a.number }})">
                     <div class="fileinput fileinput-new uploadinput-{{ a.number }}" data-provides="fileinput">
                       <span class="btn btn-default btn-file" id="changefile-{{ a.number }}">
@@ -95,6 +97,9 @@
                     </div>
                     <button class="btn btn-primary" type="submit" disabled="disabled" id="upload-{{ a.number }}">Upload</button>
                   </form>
+                  {% else %}
+                    <span class="text-success">Submitted</span>
+                  {% endif %}
                 </td>
                 <td>
                 {% if a.filename %}
@@ -113,6 +118,21 @@
                   {% endif %}
                 {% endif %}
                 </td>
+                <td>
+                  {% if a.filename %}
+                  {% if as_handle.submitted_assignments[current - loop.index0] == False %}
+                    {% if expired[a.number] %}
+                    <button class="btn btn-danger" data-toggle="modal" data-target="#Submit{{ current - loop.index0 }}">Submit</button>
+                    {% else %}
+                    Hidden
+                    {% endif %}
+                  {% else %}
+                    {% if a.test_score %}
+                    {{ "%.2f" % a.test_score }}
+                    {% endif %}
+                  {% endif %}
+                  {% endif %}
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -128,9 +148,11 @@
             <thead>
               <th>Date/Time</th>
               <th>File</th>
-              <th>Score</th>
+              <th>Dev Score</th>
+              <th>Test Score</th>
             </thead>
             <tbody>
+              {% set number = current - loop.index0 %}
               {% for item in i %}
               <tr>
                 <td>{{ item.timestamp.strftime('%Y-%m-%d @ %H:%M') }}</td>
@@ -144,6 +166,17 @@
                     {{ "%.2f" % item.score }}
                   {% endif %}
                 {% endif %}</td>
+                <td>
+                  {% if item.filename %}
+                  {% if as_handle.submitted_assignments[number] == False %}
+                    Hidden
+                  {% else %}
+                    {% if item.test_score %}
+                    {{ "%.2f" % item.test_score }}
+                    {% endif %}
+                  {% endif %}
+                  {% endif %}
+                </td>
               </tr>
               {% endfor %}
             <tbody>
@@ -152,6 +185,34 @@
       </div><!-- panel -->
       {% endfor %}
     </div>
+
+    {% for a in assignments %}
+    <div class="modal fade" id="Submit{{ loop.index0 }}" tabindex="-1" role="dialog" aria-labelledby="Submit" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title text-muted" id="myModalLabel">Submit Assignment {{ loop.index0 }}</h4>
+          </div>
+          <div class="modal-body">
+            Click the <span class="text-danger"><b>Submit Assignment</b></span> button to confirm that this is your final submission.
+            Once you submit, you will be shown your scores on test data for
+            all previously submitted solutions, but you will no longer be 
+            permitted to upload new solutions.
+            <center>
+            <hr/>
+            <button class="btn btn-primary" data-dismiss="modal">Cancel submission. I'm not done yet!</button>
+            <hr/>
+              <a href="/submit?as={{ as_handle.key.urlsafe() }}&number={{ a.number }}" class="btn btn-danger">Submit and show me my test scores!</a>
+            </center>
+          </div><!-- modal-body-->
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    {% endfor %}
+
+
+
 
     <!-- JavaScript -->
     <script src="static/js/jquery-1.10.2.min.js"></script>

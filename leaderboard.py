@@ -65,6 +65,7 @@ class Handle(ndb.Model):
   user = ndb.UserProperty() # a handle with no user belongs to the admins
   leaderboard = ndb.BooleanProperty()
   handle = ndb.TextProperty()
+  submitted_assignments = ndb.BooleanProperty(repeated=True)
 
 
 # Clean up old assignments if they never got scored
@@ -91,7 +92,16 @@ def most_recent_scored_submission(submission_history, handle, i):
               Assignment(handle=handle.key, number=i, filedata=None, 
                          score=default_score[i], percent_complete=100))
 
-
+def update_handle(handle):
+  if handle.submitted_assignments is None:
+    handle.submitted_assignments = []
+  new_assignments = len(scorer) - len(handle.submitted_assignments) 
+  if new_assignments > 0:
+    handle.submitted_assignments.extend([True] * (new_assignments-1))
+    handle.submitted_assignments.append(False)
+    handle.put()
+  return handle
+  
 def get_handle(user, request):
   # special case: admin users can request to appear as another handle
   if users.is_current_user_admin():
@@ -99,7 +109,7 @@ def get_handle(user, request):
     if req_handle:
       logging.info('Admin requested user %s' % req_handle)
       user_handle = ndb.Key(urlsafe=req_handle).get()
-      return user_handle
+      return update_handle(user_handle)
       
   query_result = Handle.query(Handle.user == user).fetch()
   if len(query_result) == 0:
@@ -107,12 +117,12 @@ def get_handle(user, request):
                          leaderboard = True, 
                          handle = user.nickname())
     user_handle.put()
-    return user_handle
+    return update_handle(user_handle)
   elif len(query_result) == 1:
-    return query_result[0]
+    return update_handle(query_result[0])
   else:
-    return query_result[0]
     logging.warning('More than one handle for user %s' % (user.nickname(),))
+    return update_handle(query_result[0])
 
 
 Message = namedtuple('Message', 'body, type')
@@ -179,6 +189,17 @@ class Progress(webapp2.RequestHandler):
       progress = history[0].percent_complete 
     self.response.write(progress)
  
+
+class Submit(webapp2.RequestHandler):
+  def get(self):
+    user = users.get_current_user()
+    if user is None:
+      return self.redirect(users.create_login_url(self.request.uri))
+    user_handle = get_handle(user, self.request)
+    user_handle.submitted_assignments[int(self.request.get('number'))] = True
+    user_handle.put()
+    self.redirect('/?as=%s' % (self.request.get('as'),))
+
 
 class Upload(webapp2.RequestHandler):
   def post(self):
@@ -363,5 +384,6 @@ application = webapp2.WSGIApplication([
   ('/update_schema', UpdateSchema),
   ('/admin', AdminPanel),
   ('/get_submission', GetSubmission),
+  ('/submit', Submit),
 #  ('/rescore', Rescore),
 ], debug=True)
