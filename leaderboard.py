@@ -18,6 +18,7 @@ import scoring.upload_number
 import scoring.alignment
 import scoring.decode
 import scoring.evaluation
+import scoring.rerank
 
 #################################################################
 # Assignment-related variables
@@ -28,6 +29,7 @@ scorer = [
   scoring.alignment,
   scoring.decode,
   scoring.evaluation,
+  scoring.rerank,
 ]
 
 # The index of the current assignment (0-indexed)
