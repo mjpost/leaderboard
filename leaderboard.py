@@ -30,6 +30,7 @@ scorer = [
   scoring.decode,
   scoring.evaluation,
   scoring.rerank,
+  scoring.inflect,
 ]
 
 # The index of the current assignment (0-indexed)
