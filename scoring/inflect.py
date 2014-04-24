@@ -11,11 +11,13 @@ import codecs
 import datetime
 from itertools import izip
 
+from google.appengine.ext import ndb
+
 reverse_order = False
 deadline = datetime.datetime(2014, 04, 28, 23, 00)
 
-class PerSentenceScoresInfer(ndb.Model):
-    score = ndb.IntegerProperty(repeated=True)
+#class PerSentenceScoresInfer(ndb.Model):
+#    score = ndb.IntegerProperty(repeated=True)
 
 def oracle():
     query_results = PerSentenceScores.query().fetch()
