@@ -13,7 +13,7 @@ from itertools import izip
 
 from google.appengine.ext import ndb
 
-reverse_order = False
+reverse_order = True
 deadline = datetime.datetime(2014, 04, 28, 23, 00)
 
 #class PerSentenceScoresInfer(ndb.Model):
