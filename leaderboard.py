@@ -19,6 +19,7 @@ import scoring.alignment
 import scoring.decode
 import scoring.evaluation
 import scoring.rerank
+import scoring.inflect
 
 #################################################################
 # Assignment-related variables
