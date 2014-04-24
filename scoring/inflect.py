@@ -20,7 +20,7 @@ deadline = datetime.datetime(2014, 04, 28, 23, 00)
 #    score = ndb.IntegerProperty(repeated=True)
 
 def oracle():
-    query_results = PerSentenceScores.query().fetch()
+    # query_results = PerSentenceScores.query().fetch()
     return 0.0
 
 def score(e_file, assignment_key, test=False):
@@ -29,7 +29,7 @@ def score(e_file, assignment_key, test=False):
 
     total = 0
     right = 0
-    for line, gold in izip(codecs.open(e_file, 'r', 'utf-8'), codecs.open(goldfile, 'r', 'utf-8')):
+    for line, gold in izip(e_file.strip().split('\n'), codecs.open(goldfile, 'r', 'utf-8')):
         compared = map(lambda x: x[0] == x[1], izip(line.split(), gold.split()))
         right += sum(compared)
         total += len(compared)
