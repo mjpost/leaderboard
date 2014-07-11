@@ -25,13 +25,18 @@ import scoring.inflect
 # Assignment-related variables
 #################################################################
 
+# To enable an assignment:
+#
+# 1. Uncomment it from the following list
+# 2. Edit the file (scoring/NAME.py) and set its deadline
+
 scorer = [
   scoring.upload_number,
-  scoring.alignment,
-  scoring.decode,
-  scoring.evaluation,
-  scoring.rerank,
-  scoring.inflect,
+#  scoring.alignment,
+#  scoring.decode,
+#  scoring.evaluation,
+#  scoring.rerank,
+#  scoring.inflect,
 ]
 
 # The index of the current assignment (0-indexed)
@@ -293,7 +298,18 @@ class UpdateSchema(webapp2.RequestHandler):
 
 
 class LeaderBoard(webapp2.RequestHandler):
-  def get(self):
+  def get(self, extension):
+    template_values = self.get_template_values()
+
+    if extension == 'html':
+      template = JINJA_ENVIRONMENT.get_template('leaderboard.html')
+      self.response.write(template.render(template_values))
+
+    else:
+      template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
+      self.response.write(template.render(template_values))
+
+  def get_template_values(self):
     user = users.get_current_user()
     handles = []
     hidden_users = []
@@ -333,16 +349,25 @@ class LeaderBoard(webapp2.RequestHandler):
 
     sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=reverse_order[CURRENT_ASSIGNMENT])
 
-    template = JINJA_ENVIRONMENT.get_template('leaderboard.js')
+    assignments = [{ 'no': i, 'scoring_method': s.scoring_method } for i,s in enumerate(scorer)]
+
+    ranks = {}
+    prev_user = ''
+    for i,user in enumerate(sorted_handles):
+      if not scores.has_key(prev_user) or scores[user][-1] != scores[prev_user][-1]:
+        ranks[user] = i + 1
+      prev_user = user
+
     template_values = {
+      'assignments': assignments,
+      'ranks': ranks,
       'handles': sorted_handles,
       'hidden_users': hidden_users,
       'scores': scores,
       'names': names,
     }
 
-    self.response.write(template.render(template_values))
-
+    return template_values
 
 class AdminPanel(webapp2.RequestHandler):
   '''admin function: update entities created before the schema was extended'''
@@ -382,7 +407,7 @@ application = webapp2.WSGIApplication([
   ('/', MainPage),
   ('/upload', Upload),
   ('/handle', ChangeHandle),
-  ('/leaderboard.js', LeaderBoard),
+  (r'/leaderboard\.(\w+)', LeaderBoard),
   ('/queued_score', QueuedScore),
   ('/progress', Progress),
   ('/update_schema', UpdateSchema),
