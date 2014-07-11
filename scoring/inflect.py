@@ -17,8 +17,23 @@ from google.appengine.ext import ndb
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
+## Assignment info ##############################################
+#
+# All three values must be defined
+
+# The assignment's name
+name = 'Inflect'
+
+# Set to true if lowest scores are best
+scoring_method = 'Accuracy'
+
+# Set to true if highest scores are best
 reverse_order = True
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 04, 28, 23, 00)
+
+#################################################################
 
 #class PerSentenceScoresInfer(ndb.Model):
 #    score = ndb.IntegerProperty(repeated=True)

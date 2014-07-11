@@ -3,8 +3,23 @@ import sys
 import optparse
 import datetime
 
+## Assignment info ##############################################
+#
+# All four values must be defined
+
+# The assignment's name
+name = 'Align'
+
+# Text used in the leaderboard column header
+scoring_method = 'AER'
+
+# Set to true if highest scores are best
 reverse_order = False
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 02, 17, 23, 00)
+
+#################################################################
 
 def oracle():
   return float('-inf')

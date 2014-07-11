@@ -10,8 +10,23 @@ from collections import namedtuple, defaultdict
 from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
+## Assignment info ##############################################
+#
+# All four values must be defined
+
+# The assignment's name
+name = 'Decode'
+
+# Text used in the leaderboard column header
+scoring_method = 'Model score'
+
+# Set to true if highest scores are best
 reverse_order = True
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 03, 05, 23, 00)
+
+#################################################################
 
 # A translation model is a dictionary where keys are tuples of French words
 # and values are lists of (english, logprob) named tuples. For instance,

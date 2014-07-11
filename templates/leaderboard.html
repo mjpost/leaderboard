@@ -52,7 +52,11 @@
                 </th>
                 {% for a in assignments %}
                 <th class="text-center">
-                  <a href="hw{{ a.no }}.html">#{{ a.no }}</a><br /><span class="small text-muted">{{ a.scoring_method }}</span>
+                  <b>{{ a.name }}</b><br />
+                  <span class="small text-muted">
+                    {{ a.scoring_method }}
+                    {% if a.reverse %} ↑ {% else %} ↓ {% endif %}
+                  </span>
                 </th>
                 {% endfor %}
               </tr>

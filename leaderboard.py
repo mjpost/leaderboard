@@ -349,7 +349,7 @@ class LeaderBoard(webapp2.RequestHandler):
 
     sorted_handles = sorted(scores.keys(), cmp=score_sort, reverse=reverse_order[CURRENT_ASSIGNMENT])
 
-    assignments = [{ 'no': i, 'scoring_method': s.scoring_method } for i,s in enumerate(scorer)]
+    assignments = [{ 'no': i, 'name': s.name, 'scoring_method': s.scoring_method, 'reverse': s.reverse_order } for i,s in enumerate(scorer)]
 
     ranks = {}
     prev_user = ''

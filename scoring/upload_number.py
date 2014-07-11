@@ -1,8 +1,22 @@
 import datetime
 
-# Assignment info
+## Assignment info ##############################################
+#
+# All four values must be defined
+
+# The assignment's name
+name = 'Setup'
+
+# Text used in the leaderboard column header
+scoring_method = 'Number'
+
+# Set to true if highest scores are best
 reverse_order = True
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 02, 10, 23, 00)
+
+#################################################################
 
 def oracle():
   return float('-inf')

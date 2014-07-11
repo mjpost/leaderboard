@@ -4,8 +4,23 @@ import logging
 import optparse
 import os
 
+## Assignment info ##############################################
+#
+# All four values must be defined
+
+# The assignment's name
+name = 'Evaluate'
+
+# Set to true if lowest scores are best
+scoring_method = 'Accuracy'
+
+# Set to true if highest scores are best
 reverse_order = True
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 03, 26, 23, 00)
+
+#################################################################
 
 def oracle():
   return float('-inf')

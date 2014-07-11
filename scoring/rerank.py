@@ -6,8 +6,23 @@ import os
 import math
 from collections import Counter
 
+## Assignment info ##############################################
+#
+# All four values must be defined
+
+# The assignment's name
+name = 'Rerank'
+
+# Set to true if lowest scores are best
+scoring_method = 'BLEU'
+
+# Set to true if highest scores are best
 reverse_order = True
+
+# The deadline YYYY, MM, DD, HH, MM (24 hour format)
 deadline = datetime.datetime(2014, 04, 14, 23, 00)
+
+#################################################################
 
 def oracle():
   return 40.0571481713
